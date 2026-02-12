@@ -4,11 +4,12 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using VoxelWorld.Core;
+using VoxelWorld.Core.Utilities;
 using VoxelWorld.Player;
 
 namespace VoxelWorld.Networking
 {
-    public class ColyseusManager : MonoBehaviour
+    public class ColyseusManager : GenericMonoSingleton<ColyseusManager>
     {
         public GameObject playerPrefab;
 
@@ -24,7 +25,7 @@ namespace VoxelWorld.Networking
 
         async Task Connect()
         {
-            client = new Client("ws://localhost:2567");
+            client = new Client("https://voxelworld-server.onrender.com");
 
             room = await client.JoinOrCreate<ColyseusSchema.State>("my_room");
 
@@ -144,7 +145,7 @@ namespace VoxelWorld.Networking
 
             Debug.Log($"SurfaceY at {x},{z} = {surfaceY}");
 
-            float correctedY = surfaceY + 4f;
+            float correctedY = surfaceY + 2f;
 
             Debug.Log($"Sending corrected Y: {correctedY}");
 
@@ -163,5 +164,7 @@ namespace VoxelWorld.Networking
 
             GameService.Instance.RegisterNetworkPlayer(playerObj.transform);
         }
+
+        public Room<ColyseusSchema.State> GetRoom() => room;
     }
 }

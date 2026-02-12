@@ -1,6 +1,9 @@
+using Colyseus;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using VoxelWorld.Core;
 using VoxelWorld.Core.Events;
+using VoxelWorld.Networking;
 using VoxelWorld.UI.Interface;
 
 namespace VoxelWorld.UI.PauseUI
@@ -28,12 +31,15 @@ namespace VoxelWorld.UI.PauseUI
             UIService.Instance.ShowOptionsUI();
         }
 
-        public void ShowMainMenuUI()
+        public async void ShowMainMenuUI()
         {
             Hide();
             Time.timeScale = 1f;
             GlobalSoundService.Instance.SoundService.PlaySFX(Sound.SoundType.UI_BUTTON_CLICK);
+            if (ColyseusManager.Instance.GetRoom() != null)
+                await ColyseusManager.Instance.GetRoom().Leave();
             UIService.Instance.ShowMainMenuUI();
+            SceneManager.LoadScene("Main Menu");
         }
 
         public void Show() => view.EnableView();

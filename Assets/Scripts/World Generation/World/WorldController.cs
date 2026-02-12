@@ -15,7 +15,7 @@ namespace VoxelWorld.WorldGeneration.World
         //public int LOAD_RADIUS = 10;  // chunk load radius
         //public int UNLOAD_DATA_RADIUS = 12; // safe radius before destroying chunk data
         //public int simulationDistance = 2; // chunks radius where colliders & simulation are enabled
-        private const int FIXED_WORLD_SIZE = 4;
+        private const int FIXED_WORLD_SIZE = 8;
 
         [Header("Atmosphere Settings")]
         public Color fogColor = new(0.7f, 0.8f, 0.9f);
