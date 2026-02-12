@@ -21,21 +21,39 @@ namespace VoxelWorld.Core.PlayerSystem
 
         private Transform playerPos;
 
-        public Transform SpawnPlayerAtSurface(Vector3 spawnPosition)
+        //public Transform SpawnPlayerAtSurface(Vector3 spawnPosition)
+        //{
+        //    int surfaceY = GameService.Instance.WorldService.GetSurfaceHeight(spawnPosition);
+        //    Vector3 finalSpawnPos = new Vector3(spawnPosition.x, surfaceY + 4f, spawnPosition.z);
+
+        //    playerPos = SpawnPlayer(finalSpawnPos);
+        //    EventService.Instance.OnGameInitialized.InvokeEvent(true);  // Notify loading system
+
+        //    return playerPos;
+        //}
+
+        //public Transform SpawnPlayer(Vector3 spawnPos)
+        //{
+        //    GameObject playerObj = Instantiate(playerPrefab, spawnPos, Quaternion.identity);
+
+        //    var view = playerObj.GetComponent<PlayerView>();
+
+        //    PlayerController controller = new PlayerController(
+        //        model,
+        //        view.CharacterController,
+        //        view.CameraTarget
+        //    );
+
+        //    // Inject controller into view
+        //    view.SetController(controller);
+
+        //    AttachCamera(view);
+
+        //    return view.transform;
+        //}
+
+        public void InitializePlayer(GameObject playerObj)
         {
-            int surfaceY = GameService.Instance.WorldService.GetSurfaceHeight(spawnPosition);
-            Vector3 finalSpawnPos = new Vector3(spawnPosition.x, surfaceY + 4f, spawnPosition.z);
-
-            playerPos = SpawnPlayer(finalSpawnPos);
-            EventService.Instance.OnGameInitialized.InvokeEvent(true);  // Notify loading system
-
-            return playerPos;
-        }
-
-        public Transform SpawnPlayer(Vector3 spawnPos)
-        {
-            GameObject playerObj = Instantiate(playerPrefab, spawnPos, Quaternion.identity);
-
             var view = playerObj.GetComponent<PlayerView>();
 
             PlayerController controller = new PlayerController(
@@ -49,7 +67,7 @@ namespace VoxelWorld.Core.PlayerSystem
 
             AttachCamera(view);
 
-            return view.transform;
+            EventService.Instance.OnGameInitialized.InvokeEvent(true);  // Notify loading system
         }
 
         private void AttachCamera(PlayerView view)

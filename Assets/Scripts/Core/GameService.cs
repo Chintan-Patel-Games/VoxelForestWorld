@@ -67,9 +67,9 @@ namespace VoxelWorld.Core
             }
 
             // Pick spawn position
-            spawnPos = new Vector3(Random.Range(-10, 10), 0, Random.Range(-10, 10));
+            //spawnPos = new Vector3(Random.Range(-10, 10), 0, Random.Range(-10, 10));
 
-            SpawnPlayerAtSurface();
+            //SpawnPlayerAtSurface();
 
             //EventService.Instance.OnChunkMeshReady.AddListener(OnSpawnChunkMeshReady);
 
@@ -79,6 +79,21 @@ namespace VoxelWorld.Core
             //// Force mesh build for initial spawn chunk (before streaming/player exist)
             //Vector2Int spawnCoord = WorldService.WorldToChunkCoord(spawnPos);
             //WorldService.GetChunkService().BuildChunkMesh(spawnCoord);
+        }
+
+        public void RegisterNetworkPlayer(Transform networkPlayer)
+        {
+            Debug.Log("GameService registering network player.");
+
+            player = networkPlayer;
+            PlayerService.Instance.InitializePlayer(networkPlayer.gameObject);
+            worldController.player = player;
+
+            EventService.Instance.OnGameInitialized.InvokeEvent(true);
+            UIService.Instance.HideLoadingUI();
+
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
 
         private void Update() => GlobalSoundService.Instance.SoundService?.UpdateFootsteps(Time.deltaTime);
@@ -97,23 +112,23 @@ namespace VoxelWorld.Core
         //    SpawnPlayerAtSurface();
         //}
 
-        private void SpawnPlayerAtSurface()
-        {
-            // Delegates the responsibility to PlayerService
-            player = PlayerService.Instance.SpawnPlayerAtSurface(spawnPos);
+        //private void SpawnPlayerAtSurface()
+        //{
+        //    // Delegates the responsibility to PlayerService
+        //    player = PlayerService.Instance.SpawnPlayerAtSurface(spawnPos);
 
-            worldController.player = player;
+        //    worldController.player = player;
 
-            EventService.Instance.OnGameInitialized.InvokeEvent(true);
-            UIService.Instance.HideLoadingUI();  // Hide loading screen
+        //    EventService.Instance.OnGameInitialized.InvokeEvent(true);
+        //    UIService.Instance.HideLoadingUI();  // Hide loading screen
 
-            // Lock + hide cursor for FPS control
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+        //    // Lock + hide cursor for FPS control
+        //    Cursor.lockState = CursorLockMode.Locked;
+        //    Cursor.visible = false;
 
-            // Begin streaming chunks around player
-            //WorldService.StartStreamingFromPlayer(player, worldController);
-        }
+        //    // Begin streaming chunks around player
+        //    //WorldService.StartStreamingFromPlayer(player, worldController);
+        //}
 
         public static ChunkService ChunkService => Instance.WorldService.GetChunkService();
     }
