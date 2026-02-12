@@ -26,52 +26,76 @@ namespace VoxelWorld.WorldGeneration.Chunks
             return c;
         }
 
-        public void GenerateChunk(
-            Vector2Int coord,
-            float delay,
-            Func<int, int, int, BlockType> terrainGenerator,
-            Action<ChunkController> onChunkReady)
+        //public void GenerateChunk(
+        //    Vector2Int coord,
+        //    float delay,
+        //    Func<int, int, int, BlockType> terrainGenerator,
+        //    Action<ChunkController> onChunkReady)
+        //{
+        //    if (HasChunk(coord) || generatingChunks.ContainsKey(coord))
+        //        return;
+
+        //    Coroutine routine = ChunkRunner.Run(GenerateRoutine(coord, delay, terrainGenerator, onChunkReady));
+        //    generatingChunks[coord] = routine;
+        //}
+
+        public void GenerateChunk(Vector2Int coord, Func<int, int, int, BlockType> terrainGenerator)
         {
-            if (HasChunk(coord) || generatingChunks.ContainsKey(coord))
+            if (HasChunk(coord))
                 return;
 
-            Coroutine routine = ChunkRunner.Run(GenerateRoutine(coord, delay, terrainGenerator, onChunkReady));
-            generatingChunks[coord] = routine;
-        }
-
-        private IEnumerator GenerateRoutine(Vector2Int coord,
-                                            float delay,
-                                            Func<int, int, int, BlockType> terrainFunc,
-                                            Action<ChunkController> onChunkReady)
-        {
-            // Instantiate prefab in world space (y = 0)
             Vector3 pos = new Vector3(coord.x * chunkSize, 0, coord.y * chunkSize);
             GameObject viewObj = GameObject.Instantiate(chunkPrefab, pos, Quaternion.identity);
             ChunkView view = viewObj.GetComponent<ChunkView>();
 
-            // Create Controller + Model
             ChunkController controller = new ChunkController(coord, view);
             ActiveChunks[coord] = controller;
 
-            // Fill blocks via controller method
-            controller.GenerateBlocks(terrainFunc);
+            controller.GenerateBlocks(terrainGenerator);
 
-            // Add trees BEFORE mesh generation
-            GameService.Instance.TreeService.TryPlaceTrees(controller, GameService.Instance.worldService.GetTerrainService());
+            GameService.Instance.TreeService.TryPlaceTrees(
+                controller,
+                GameService.Instance.WorldService.GetTerrainService()
+            );
 
-            // small yield if chunk-heavy; respect requested delay between rows to avoid stutter
-            if (delay > 0f) yield return new WaitForSeconds(delay);
-
-            // Link neighbors (wire up adjacency)
             TryLinkNeighbors(coord, controller);
 
-            // Additional generation step (trees, models)
-            onChunkReady?.Invoke(controller);
-
-            // Generation finished
-            if (generatingChunks.ContainsKey(coord))
-                generatingChunks.Remove(coord);
+            controller.BuildMesh();
         }
+
+        //private IEnumerator GenerateRoutine(Vector2Int coord,
+        //                                    float delay,
+        //                                    Func<int, int, int, BlockType> terrainFunc,
+        //                                    Action<ChunkController> onChunkReady)
+        //{
+        //    // Instantiate prefab in world space (y = 0)
+        //    Vector3 pos = new Vector3(coord.x * chunkSize, 0, coord.y * chunkSize);
+        //    GameObject viewObj = GameObject.Instantiate(chunkPrefab, pos, Quaternion.identity);
+        //    ChunkView view = viewObj.GetComponent<ChunkView>();
+
+        //    // Create Controller + Model
+        //    ChunkController controller = new ChunkController(coord, view);
+        //    ActiveChunks[coord] = controller;
+
+        //    // Fill blocks via controller method
+        //    controller.GenerateBlocks(terrainFunc);
+
+        //    // Add trees BEFORE mesh generation
+        //    GameService.Instance.TreeService.TryPlaceTrees(controller, GameService.Instance.worldService.GetTerrainService());
+
+        //    // small yield if chunk-heavy; respect requested delay between rows to avoid stutter
+        //    if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        //    // Link neighbors (wire up adjacency)
+        //    TryLinkNeighbors(coord, controller);
+
+        //    // Additional generation step (trees, models)
+        //    onChunkReady?.Invoke(controller);
+
+        //    // Generation finished
+        //    if (generatingChunks.ContainsKey(coord))
+        //        generatingChunks.Remove(coord);
+        //}
 
         // Attempt to link neighbors in ActiveChunks
         private void TryLinkNeighbors(Vector2Int coord, ChunkController current)
@@ -108,64 +132,64 @@ namespace VoxelWorld.WorldGeneration.Chunks
             controller.BuildMesh();
         }
 
-        // Unload mesh for a chunk but keep the chunk data (so it can be re-meshed quickly)
-        public void UnloadChunkMesh(Vector2Int coord)
-        {
-            if (!ActiveChunks.TryGetValue(coord, out var controller)) return;
-            if (controller.View == null) return;
+        //// Unload mesh for a chunk but keep the chunk data (so it can be re-meshed quickly)
+        //public void UnloadChunkMesh(Vector2Int coord)
+        //{
+        //    if (!ActiveChunks.TryGetValue(coord, out var controller)) return;
+        //    if (controller.View == null) return;
 
-            // Remove collider first if any
-            if (controller.View.meshCollider != null)
-            {
-                controller.View.meshCollider.sharedMesh = null;
-            }
+        //    // Remove collider first if any
+        //    if (controller.View.meshCollider != null)
+        //    {
+        //        controller.View.meshCollider.sharedMesh = null;
+        //    }
 
-            // Remove mesh from MeshFilter and destroy Mesh object to free memory
-            if (controller.View.meshFilter != null)
-            {
-                Mesh m = controller.View.meshFilter.sharedMesh;
-                controller.View.meshFilter.sharedMesh = null;
+        //    // Remove mesh from MeshFilter and destroy Mesh object to free memory
+        //    if (controller.View.meshFilter != null)
+        //    {
+        //        Mesh m = controller.View.meshFilter.sharedMesh;
+        //        controller.View.meshFilter.sharedMesh = null;
 
-                if (m != null)
-                {
-                    // Destroy the runtime Mesh object
-                    UnityEngine.Object.Destroy(m);
-                }
-            }
-        }
+        //        if (m != null)
+        //        {
+        //            // Destroy the runtime Mesh object
+        //            UnityEngine.Object.Destroy(m);
+        //        }
+        //    }
+        //}
 
-        // Completely destroy a chunk (used when outside LOAD_RADIUS)
-        public void DestroyChunk(Vector2Int coord)
-        {
-            if (!ActiveChunks.TryGetValue(coord, out var chunk)) return;
+        //// Completely destroy a chunk (used when outside LOAD_RADIUS)
+        //public void DestroyChunk(Vector2Int coord)
+        //{
+        //    if (!ActiveChunks.TryGetValue(coord, out var chunk)) return;
 
-            // Unlink neighbors
-            if (chunk.North != null) chunk.North.ApplyNeighbor(Direction.South, null);
-            if (chunk.South != null) chunk.South.ApplyNeighbor(Direction.North, null);
-            if (chunk.East != null) chunk.East.ApplyNeighbor(Direction.West, null);
-            if (chunk.West != null) chunk.West.ApplyNeighbor(Direction.East, null);
+        //    // Unlink neighbors
+        //    if (chunk.North != null) chunk.North.ApplyNeighbor(Direction.South, null);
+        //    if (chunk.South != null) chunk.South.ApplyNeighbor(Direction.North, null);
+        //    if (chunk.East != null) chunk.East.ApplyNeighbor(Direction.West, null);
+        //    if (chunk.West != null) chunk.West.ApplyNeighbor(Direction.East, null);
 
-            // Unload mesh safely
-            if (chunk.View != null)
-            {
-                // Null collider first, then destroy mesh/filter and GameObject
-                if (chunk.View.meshCollider != null)
-                    chunk.View.meshCollider.sharedMesh = null;
+        //    // Unload mesh safely
+        //    if (chunk.View != null)
+        //    {
+        //        // Null collider first, then destroy mesh/filter and GameObject
+        //        if (chunk.View.meshCollider != null)
+        //            chunk.View.meshCollider.sharedMesh = null;
 
-                if (chunk.View.meshFilter != null)
-                {
-                    Mesh m = chunk.View.meshFilter.sharedMesh;
-                    chunk.View.meshFilter.sharedMesh = null;
-                    if (m != null)
-                        UnityEngine.Object.Destroy(m);
-                }
+        //        if (chunk.View.meshFilter != null)
+        //        {
+        //            Mesh m = chunk.View.meshFilter.sharedMesh;
+        //            chunk.View.meshFilter.sharedMesh = null;
+        //            if (m != null)
+        //                UnityEngine.Object.Destroy(m);
+        //        }
 
-                UnityEngine.Object.Destroy(chunk.View.gameObject);
-            }
+        //        UnityEngine.Object.Destroy(chunk.View.gameObject);
+        //    }
 
-            ActiveChunks.Remove(coord);
-        }
+        //    ActiveChunks.Remove(coord);
+        //}
 
-        public bool IsGenerating(Vector2Int coord) => generatingChunks.ContainsKey(coord);
+        //public bool IsGenerating(Vector2Int coord) => generatingChunks.ContainsKey(coord);
     }
 }

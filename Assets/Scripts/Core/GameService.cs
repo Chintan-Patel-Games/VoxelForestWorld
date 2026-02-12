@@ -24,7 +24,7 @@ namespace VoxelWorld.Core
         private Vector3 spawnPos;
 
         // Services
-        public WorldService worldService { get; private set; }
+        public WorldService WorldService { get; private set; }
         public TreeService TreeService { get; private set; }
 
         private bool isGameScene;
@@ -41,13 +41,14 @@ namespace VoxelWorld.Core
             if (isGameScene)
             {
                 InitializeServices();
+                worldController.Init(WorldService);
                 worldController.SetupFog();
             }
         }
 
         private void InitializeServices()
         {
-            worldService = new WorldService(chunkPrefab, worldSeed, loadDelay);
+            WorldService = new WorldService(chunkPrefab, worldSeed, loadDelay);
             TreeService = new TreeService(worldSeed);
         }
 
@@ -66,38 +67,42 @@ namespace VoxelWorld.Core
             }
 
             // Pick spawn position
-            spawnPos = new Vector3(Random.Range(-200, 200), 0, Random.Range(-200, 200));
+            spawnPos = new Vector3(Random.Range(-10, 10), 0, Random.Range(-10, 10));
 
-            EventService.Instance.OnChunkMeshReady.AddListener(OnSpawnChunkMeshReady);
+            SpawnPlayerAtSurface();
 
-            // Generate initial chunk where player will spawn
-            worldService.GenerateInitialChunk(spawnPos);
+            //EventService.Instance.OnChunkMeshReady.AddListener(OnSpawnChunkMeshReady);
 
-            // Force mesh build for initial spawn chunk (before streaming/player exist)
-            Vector2Int spawnCoord = worldService.WorldToChunkCoord(spawnPos);
-            worldService.GetChunkService().BuildChunkMesh(spawnCoord);
+            //// Generate initial chunk where player will spawn
+            //WorldService.GenerateInitialChunk(spawnPos);
+
+            //// Force mesh build for initial spawn chunk (before streaming/player exist)
+            //Vector2Int spawnCoord = WorldService.WorldToChunkCoord(spawnPos);
+            //WorldService.GetChunkService().BuildChunkMesh(spawnCoord);
         }
 
         private void Update() => GlobalSoundService.Instance.SoundService?.UpdateFootsteps(Time.deltaTime);
 
-        private void OnSpawnChunkMeshReady(Vector2Int coord)
-        {
-            if (!isGameScene) return;
+        //private void OnSpawnChunkMeshReady(Vector2Int coord)
+        //{
+        //    if (!isGameScene) return;
 
-            Vector2Int spawnCoord = worldService.WorldToChunkCoord(spawnPos);
+        //    Vector2Int spawnCoord = WorldService.WorldToChunkCoord(spawnPos);
             
-            if (coord != spawnCoord) return;  // Only spawn when THIS EXACT chunk mesh is ready
+        //    if (coord != spawnCoord) return;  // Only spawn when THIS EXACT chunk mesh is ready
 
-            // Stop listening (so no duplicate spawns)
-            EventService.Instance.OnChunkMeshReady.RemoveListener(OnSpawnChunkMeshReady);
+        //    // Stop listening (so no duplicate spawns)
+        //    EventService.Instance.OnChunkMeshReady.RemoveListener(OnSpawnChunkMeshReady);
 
-            SpawnPlayerAtSurface();
-        }
+        //    SpawnPlayerAtSurface();
+        //}
 
         private void SpawnPlayerAtSurface()
         {
             // Delegates the responsibility to PlayerService
             player = PlayerService.Instance.SpawnPlayerAtSurface(spawnPos);
+
+            worldController.player = player;
 
             EventService.Instance.OnGameInitialized.InvokeEvent(true);
             UIService.Instance.HideLoadingUI();  // Hide loading screen
@@ -107,9 +112,9 @@ namespace VoxelWorld.Core
             Cursor.visible = false;
 
             // Begin streaming chunks around player
-            worldService.StartStreamingFromPlayer(player, worldController);
+            //WorldService.StartStreamingFromPlayer(player, worldController);
         }
 
-        public static ChunkService ChunkService => Instance.worldService.GetChunkService();
+        public static ChunkService ChunkService => Instance.WorldService.GetChunkService();
     }
 }

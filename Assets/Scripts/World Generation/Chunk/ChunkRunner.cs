@@ -21,17 +21,35 @@ namespace VoxelWorld.WorldGeneration.Chunks
         private const int meshAppliesPerFrame = 2;
         private const int colliderAppliesPerFrame = 1;
 
-        // StartCoroutine helper
-        public static Coroutine Run(IEnumerator routine) => Instance.StartCoroutine(routine);
+        //// StartCoroutine helper
+        //public static Coroutine Run(IEnumerator routine) => Instance.StartCoroutine(routine);
 
-        // Worker threads call this to enqueue MeshData for application
-        public static void EnqueueMeshApply(ChunkController controller, MeshModel meshData)
+        //// Worker threads call this to enqueue MeshData for application
+        //public static void EnqueueMeshApply(ChunkController controller, MeshModel meshData)
+        //{
+        //    if (controller == null || meshData == null) return;
+
+        //    lock (meshQueueLock)
+        //    {
+        //        pendingMeshApplies.Enqueue((controller, meshData));
+        //    }
+        //}
+
+        public static void ApplyMeshImmediately(ChunkController controller, MeshModel data)
         {
-            if (controller == null || meshData == null) return;
+            if (controller?.View?.meshFilter == null) return;
 
-            lock (meshQueueLock)
+            Mesh mesh = new Mesh();
+            mesh.vertices = data.vertices;
+            mesh.triangles = data.triangles;
+            mesh.uv = data.uvs;
+            mesh.RecalculateNormals();
+
+            controller.View.meshFilter.sharedMesh = mesh;
+
+            if (controller.RequiresCollider && controller.View.meshCollider != null)
             {
-                pendingMeshApplies.Enqueue((controller, meshData));
+                controller.View.meshCollider.sharedMesh = mesh;
             }
         }
 

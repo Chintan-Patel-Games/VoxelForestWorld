@@ -29,31 +29,31 @@ namespace VoxelWorld.WorldGeneration.World
             chunkService = new ChunkService(chunkPrefab);
         }
 
-        // Generate ONLY the player spawn chunk
-        public void GenerateInitialChunk(Vector3 spawnPos)
-        {
-            Vector2Int coord = WorldToChunkCoord(spawnPos);
+        //// Generate ONLY the player spawn chunk
+        //public void GenerateInitialChunk(Vector3 spawnPos)
+        //{
+        //    Vector2Int coord = WorldToChunkCoord(spawnPos);
 
-            chunkService.GenerateChunk(
-                coord,
-                loadDelay,
-                (x, y, z) =>
-                {
-                    int worldX = coord.x * ChunkService.chunkSize + x;
-                    int worldZ = coord.y * ChunkService.chunkSize + z;
-                    return terrainService.GetBlockTypeAt(worldX, worldZ, y);
-                },
-                onChunkReady: null // we add vegetation later
-            );
-        }
+        //    chunkService.GenerateChunk(
+        //        coord,
+        //        loadDelay,
+        //        (x, y, z) =>
+        //        {
+        //            int worldX = coord.x * ChunkService.chunkSize + x;
+        //            int worldZ = coord.y * ChunkService.chunkSize + z;
+        //            return terrainService.GetBlockTypeAt(worldX, worldZ, y);
+        //        },
+        //        onChunkReady: null // we add vegetation later
+        //    );
+        //}
 
-        public bool IsChunkReady(Vector3 worldPos)
-        {
-            Vector2Int coord = WorldToChunkCoord(worldPos);
-            ChunkController c = chunkService.GetChunk(coord);
-            //return c != null && c.IsMeshReady;
-            return c != null;
-        }
+        //public bool IsChunkReady(Vector3 worldPos)
+        //{
+        //    Vector2Int coord = WorldToChunkCoord(worldPos);
+        //    ChunkController c = chunkService.GetChunk(coord);
+        //    //return c != null && c.IsMeshReady;
+        //    return c != null;
+        //}
 
         // Find height at world position
         public int GetSurfaceHeight(Vector3 worldPos)
@@ -77,16 +77,16 @@ namespace VoxelWorld.WorldGeneration.World
         public ChunkService GetChunkService() => chunkService;
         public TerrainService GetTerrainService() => terrainService;
 
-        public void StartStreamingFromPlayer(Transform player, WorldController controller)
-        {
-            if (controller == null)
-            {
-                Debug.LogError("WorldController reference missing!");
-                return;
-            }
+        //public void StartStreamingFromPlayer(Transform player, WorldController controller)
+        //{
+        //    if (controller == null)
+        //    {
+        //        Debug.LogError("WorldController reference missing!");
+        //        return;
+        //    }
 
-            controller.Init(this);
-            controller.player = player;
-        }
+        //    controller.Init(this);
+        //    controller.player = player;
+        //}
     }
 }

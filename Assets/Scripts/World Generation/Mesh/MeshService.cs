@@ -25,13 +25,16 @@ namespace VoxelWorld.WorldGeneration.Meshes
             if (!GameService.ChunkService.HasChunk(controller.Coord)) return; // chunk destroyed while meshing
 
             // Kick off background task - don't touch UnityEngine objects in the worker
-            Task.Run(() =>
-            {
-                MeshModel data = MeshController.GenerateMeshData(controller);
+            //Task.Run(() =>
+            //{
+            //    MeshModel data = MeshController.GenerateMeshData(controller);
 
-                // Enqueue for main-thread application (ChunkRunner will budget the applies)
-                ChunkRunner.EnqueueMeshApply(controller, data);
-            });
+            //    // Enqueue for main-thread application (ChunkRunner will budget the applies)
+            //    ChunkRunner.EnqueueMeshApply(controller, data);
+            //});
+
+            MeshModel data = MeshController.GenerateMeshData(controller);
+            ChunkRunner.ApplyMeshImmediately(controller, data);
         }
     }
 }

@@ -53,13 +53,13 @@ namespace VoxelWorld.WorldGeneration.Chunks
                 neighbor.SetNeighbor(opp, this);
 
                 // rebuild both sides to hide interior faces
-                this.OnNeighborAdded(neighbor);
-                neighbor.OnNeighborAdded(this);
+                //this.OnNeighborAdded(neighbor);
+                //neighbor.OnNeighborAdded(this);
             }
             else
             {
                 // neighbor removed
-                this.OnNeighborRemoved();
+                //this.OnNeighborRemoved();
             }
         }
 
@@ -86,9 +86,9 @@ namespace VoxelWorld.WorldGeneration.Chunks
             };
         }
 
-        public void OnNeighborAdded(ChunkController neighbor) => RebuildMesh();
+        //public void OnNeighborAdded(ChunkController neighbor) => RebuildMesh();
 
-        public void OnNeighborRemoved() => RebuildMesh();
+        //public void OnNeighborRemoved() => RebuildMesh();
 
         public void RebuildBorders()
         {

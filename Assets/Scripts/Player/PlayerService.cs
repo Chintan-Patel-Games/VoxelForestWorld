@@ -23,8 +23,8 @@ namespace VoxelWorld.Core.PlayerSystem
 
         public Transform SpawnPlayerAtSurface(Vector3 spawnPosition)
         {
-            int surfaceY = GameService.Instance.worldService.GetSurfaceHeight(spawnPosition);
-            Vector3 finalSpawnPos = new Vector3(spawnPosition.x, surfaceY + 2f, spawnPosition.z);
+            int surfaceY = GameService.Instance.WorldService.GetSurfaceHeight(spawnPosition);
+            Vector3 finalSpawnPos = new Vector3(spawnPosition.x, surfaceY + 4f, spawnPosition.z);
 
             playerPos = SpawnPlayer(finalSpawnPos);
             EventService.Instance.OnGameInitialized.InvokeEvent(true);  // Notify loading system
