@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using VoxelWorld.Core;
-using VoxelWorld.Core.PlayerSystem;
 using VoxelWorld.Core.Utilities;
 
 namespace VoxelWorld.Networking
@@ -21,6 +20,9 @@ namespace VoxelWorld.Networking
 
         private Dictionary<string, GameObject> spawnedPlayers = new();
         private Dictionary<string, NetworkTransform> networkTransforms = new();
+
+        // SAFE REMOVE LIST
+        private List<string> playersToRemove = new();
 
         async void Start()
         {
@@ -68,16 +70,9 @@ namespace VoxelWorld.Networking
                     );
 
                     spawnedPlayers[id] = playerObj;
-
                     networkTransforms[id] = new NetworkTransform();
 
                     var view = playerObj.GetComponent<NetworkPlayerView>();
-                    if (view == null)
-                    {
-                        Debug.LogError("NetworkPlayerView missing on Player Prefab!");
-                        return;
-                    }
-
                     var sender = playerObj.GetComponent<NetworkInputSender>();
 
                     // LOCAL PLAYER
@@ -87,7 +82,6 @@ namespace VoxelWorld.Networking
 
                         view.IsLocalPlayer = true;
                         playerObj.tag = "LocalPlayer";
-
                         view.NetworkTransform = networkTransforms[id];
 
                         if (sender != null)
@@ -102,7 +96,6 @@ namespace VoxelWorld.Networking
                         Debug.Log("Remote player spawned");
 
                         view.IsLocalPlayer = false;
-
                         view.NetworkTransform = networkTransforms[id];
 
                         if (sender != null)
@@ -112,15 +105,16 @@ namespace VoxelWorld.Networking
                     Debug.Log("Spawned player: " + id);
                 }
 
+                // UPDATE TARGET TRANSFORM
                 networkTransforms[id].TargetPosition = new Vector3(
-                        playerState.x,
-                        playerState.y,
-                        playerState.z
+                    playerState.x,
+                    playerState.y,
+                    playerState.z
                 );
 
                 networkTransforms[id].TargetRotationY = playerState.rotY;
 
-                // UPDATE LOCAL MODEL FROM SERVER
+                // REGISTER LOCAL PLAYER ONLY ONCE
                 if (id == room.SessionId)
                 {
                     if (!localPlayerInitialized)
@@ -136,28 +130,39 @@ namespace VoxelWorld.Networking
                 }
             }
 
-            // REMOVE DISCONNECTED PLAYERS
-            var existingIds = new List<string>(spawnedPlayers.Keys);
+            // MARK DISCONNECTED PLAYERS
+            playersToRemove.Clear();
 
-            foreach (var id in existingIds)
+            foreach (var id in spawnedPlayers.Keys)
             {
                 if (!state.players.ContainsKey(id))
-                    StartCoroutine(RemovePlayerNextFrame(id));
+                    playersToRemove.Add(id);
             }
+
+            if (playersToRemove.Count > 0)
+                StartCoroutine(RemovePlayersSafely());
         }
 
-        private IEnumerator RemovePlayerNextFrame(string id)
+        // SAFE REMOVE AFTER PATCH FINISH
+        private IEnumerator RemovePlayersSafely()
         {
-            yield return null;
+            yield return new WaitForEndOfFrame();
 
-            if (spawnedPlayers.TryGetValue(id, out var obj))
+            foreach (var id in playersToRemove)
             {
-                if (obj != null)
-                    Destroy(obj);
+                if (spawnedPlayers.TryGetValue(id, out var obj))
+                {
+                    if (obj != null)
+                        Destroy(obj);
 
-                spawnedPlayers.Remove(id);
-                networkTransforms.Remove(id);
+                    spawnedPlayers.Remove(id);
+                    networkTransforms.Remove(id);
+
+                    Debug.Log("Removed player safely: " + id);
+                }
             }
+
+            playersToRemove.Clear();
         }
 
         public void SendInput(Dictionary<string, object> input)
@@ -167,5 +172,11 @@ namespace VoxelWorld.Networking
         }
 
         public Room<ColyseusSchema.State> GetRoom() => room;
+
+        private void OnDestroy()
+        {
+            if (room != null)
+                room.OnStateChange -= OnStateUpdated;
+        }
     }
 }
