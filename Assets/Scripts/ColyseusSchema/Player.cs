@@ -27,5 +27,17 @@ public Player() { }
 
 		[Type(3, "number")]
 		public float rotY = default(float);
+
+		[Type(4, "number")]
+		public float velY = default(float);
+
+		[Type(5, "number")]
+		public float inputX = default(float);
+
+		[Type(6, "number")]
+		public float inputZ = default(float);
+
+		[Type(7, "boolean")]
+		public bool grounded = default(bool);
 	}
 }

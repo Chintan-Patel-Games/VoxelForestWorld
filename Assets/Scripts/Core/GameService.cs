@@ -86,7 +86,8 @@ namespace VoxelWorld.Core
             Debug.Log("GameService registering network player.");
 
             player = networkPlayer;
-            PlayerService.Instance.InitializePlayer(networkPlayer.gameObject);
+            //PlayerService.Instance.InitializePlayer(networkPlayer.gameObject);
+            PlayerService.Instance.AttachCameraToNetworkPlayer(networkPlayer);
             worldController.player = player;
 
             EventService.Instance.OnGameInitialized.InvokeEvent(true);

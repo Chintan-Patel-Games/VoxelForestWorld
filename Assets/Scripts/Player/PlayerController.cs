@@ -8,6 +8,7 @@ namespace VoxelWorld.Player
         private PlayerModel model;
         private CharacterController controller;
         private Transform cameraTarget;
+        private bool isLocalPlayer;
 
         // Footsteps
         private bool wasMoving = false;
@@ -28,11 +29,12 @@ namespace VoxelWorld.Player
         private Vector2 smoothLook;
         private Vector2 currentLook;
 
-        public PlayerController(PlayerModel model, CharacterController controller, Transform cameraTarget)
+        public PlayerController(PlayerModel model, CharacterController controller, Transform cameraTarget, bool isLocalPlayer)
         {
             this.model = model;
             this.controller = controller;
             this.cameraTarget = cameraTarget;
+            this.isLocalPlayer = isLocalPlayer;
 
             jumpTimeoutDelta = model.JumpTimeout;
             fallTimeoutDelta = model.FallTimeout;
@@ -40,12 +42,20 @@ namespace VoxelWorld.Player
 
         public void TickUpdate(Transform playerTransform)
         {
-            GroundedCheck(playerTransform);
-            JumpAndGravity();
-            Move(playerTransform);
+            if (!isLocalPlayer) return;
+
+            //GroundedCheck(playerTransform);
+            //JumpAndGravity();
+            //Move(playerTransform);
         }
 
-        public void TickLateUpdate(Transform playerTransform) => CameraRotation(playerTransform);
+        public void TickLateUpdate(Transform playerTransform)
+        {
+            if (!isLocalPlayer) return;
+
+            CameraRotation(playerTransform);
+        }
+
 
         private void GroundedCheck(Transform playerTransform)
         {

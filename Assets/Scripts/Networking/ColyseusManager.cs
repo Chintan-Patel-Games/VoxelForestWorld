@@ -5,18 +5,21 @@ using System.Threading.Tasks;
 using UnityEngine;
 using VoxelWorld.Core;
 using VoxelWorld.Core.Utilities;
-using VoxelWorld.Player;
 
 namespace VoxelWorld.Networking
 {
     public class ColyseusManager : GenericMonoSingleton<ColyseusManager>
     {
+        [Header("Player Prefab")]
         public GameObject playerPrefab;
 
         private Client client;
         private Room<ColyseusSchema.State> room;
 
+        private bool localPlayerInitialized = false;
+
         private Dictionary<string, GameObject> spawnedPlayers = new();
+        private Dictionary<string, NetworkTransform> networkTransforms = new();
 
         async void Start()
         {
@@ -25,144 +28,120 @@ namespace VoxelWorld.Networking
 
         async Task Connect()
         {
-            client = new Client("https://voxelworld-server.onrender.com");
+            client = new Client("wss://voxelworld-server.onrender.com");
 
             room = await client.JoinOrCreate<ColyseusSchema.State>("my_room");
 
             Debug.Log("Connected to room!");
 
-            room.OnStateChange += (state, isFirstState) =>
+            room.OnLeave += (code) =>
             {
-                if (isFirstState)
-                {
-                    Debug.Log("Initial state received");
-                }
-
-                // Spawn / Update players
-                foreach (var key in state.players.Keys)
-                {
-                    string id = (string)key;
-                    var playerState = state.players[id];
-
-                    if (!spawnedPlayers.ContainsKey(id))
-                    {
-                        GameObject playerObj = Instantiate(playerPrefab);
-                        spawnedPlayers[id] = playerObj;
-
-                        if (id == room.SessionId)
-                        {
-                            Debug.Log("Spawned LOCAL player: " + id);
-
-                            StartCoroutine(FixSpawnHeight(playerState.x, playerState.z));
-
-                            // Register with GameService
-                            //GameService.Instance.RegisterNetworkPlayer(playerObj.transform);
-
-                            StartCoroutine(InitializePlayerAfterSpawn(playerObj));
-                        }
-                        else
-                        {
-                            Debug.Log("Spawned REMOTE player: " + id);
-
-                            // Disable movement logic on remote player
-                            var view = playerObj.GetComponent<PlayerView>();
-                            if (view != null)
-                            {
-                                view.enabled = false; // disables Update loop if any
-                            }
-
-                            // Disable CharacterController to avoid physics interference
-                            var cc = playerObj.GetComponent<CharacterController>();
-                            if (cc != null)
-                            {
-                                cc.enabled = false;
-                            }
-                        }
-                    }
-
-                    var obj = spawnedPlayers[id];
-                    if (id != room.SessionId)
-                    {
-                        // Only update REMOTE players from network
-                        obj.transform.position = new Vector3(
-                            playerState.x,
-                            playerState.y,
-                            playerState.z
-                        );
-
-                        obj.transform.rotation = Quaternion.Euler(
-                            0,
-                            playerState.rotY,
-                            0
-                        );
-                    }
-                }
-
-                // Removal logic (safe copy of keys)
-                var existingIds = new List<string>(spawnedPlayers.Keys);
-
-                foreach (var id in existingIds)
-                {
-                    if (!state.players.ContainsKey(id))
-                    {
-                        Destroy(spawnedPlayers[id]);
-                        spawnedPlayers.Remove(id);
-                        Debug.Log("Removed player: " + id);
-                    }
-                }
-                Debug.Log("OnStateChange triggered. Player count: " + state.players.Count);
+                Debug.LogError("ROOM DISCONNECTED! CODE: " + code);
             };
+
+            room.OnStateChange += OnStateUpdated;
         }
 
-        void Update()
+        private void OnStateUpdated(ColyseusSchema.State state, bool isFirstState)
+        {
+            if (isFirstState)
+                Debug.Log("Initial state received");
+
+            foreach (var key in state.players.Keys)
+            {
+                string id = (string)key;
+                var playerState = state.players[id];
+
+                if (!spawnedPlayers.ContainsKey(id))
+                {
+                    GameObject playerObj = Instantiate(playerPrefab);
+                    spawnedPlayers[id] = playerObj;
+
+                    networkTransforms[id] = new NetworkTransform();
+
+                    var view = playerObj.GetComponent<NetworkPlayerView>();
+                    if (view == null)
+                    {
+                        Debug.LogError("NetworkPlayerView MISSING on Player Prefab!");
+                        return;
+                    }
+                    view.NetworkTransform = networkTransforms[id];
+
+                    var sender = playerObj.GetComponent<NetworkInputSender>();
+
+                    if (id == room.SessionId)
+                    {
+                        Debug.Log("Local player spawned");
+
+                        view.IsLocalPlayer = true;
+                        playerObj.tag = "LocalPlayer";
+
+                        if (sender != null)
+                        {
+                            sender.manager = this;
+                            sender.enabled = true;
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log("Remote player spawned");
+
+                        view.IsLocalPlayer = false;
+
+                        if (sender != null)
+                            sender.enabled = false;
+                    }
+
+                    Debug.Log("Spawned player: " + id);
+                }
+
+                networkTransforms[id].TargetPosition = new Vector3(
+                    playerState.x,
+                    playerState.y,
+                    playerState.z
+                );
+
+                if (id == room.SessionId && !localPlayerInitialized)
+                {
+                    localPlayerInitialized = true;
+
+                    Debug.Log("Registering local network player AFTER first server sync");
+
+                    GameService.Instance.RegisterNetworkPlayer(
+                        spawnedPlayers[id].transform
+                    );
+                }
+
+                networkTransforms[id].TargetRotationY = playerState.rotY;
+            }
+
+            var existingIds = new List<string>(spawnedPlayers.Keys);
+
+            foreach (var id in existingIds)
+            {
+                if (!state.players.ContainsKey(id))
+                    StartCoroutine(RemovePlayerNextFrame(id));
+            }
+        }
+
+        private IEnumerator RemovePlayerNextFrame(string id)
+        {
+            yield return null;
+
+            if (spawnedPlayers.TryGetValue(id, out var obj))
+            {
+                if (obj != null)
+                    Destroy(obj);
+
+                spawnedPlayers.Remove(id);
+                networkTransforms.Remove(id);
+            }
+        }
+
+        public void SendInput(Dictionary<string, object> input)
         {
             if (room == null) return;
-
-            if (!spawnedPlayers.ContainsKey(room.SessionId)) return;
-
-            GameObject localPlayer = spawnedPlayers[room.SessionId];
-
-            // Send actual position of local player
-            Vector3 pos = localPlayer.transform.position;
-            float rotY = localPlayer.transform.eulerAngles.y;
-
-            room.Send("move", new
-            {
-                x = pos.x,
-                y = pos.y,
-                z = pos.z,
-                rotY = rotY
-            });
-        }
-
-        private System.Collections.IEnumerator FixSpawnHeight(float x, float z)
-        {
-            // Wait a short moment for chunks to generate
-            yield return new WaitForSeconds(0.2f);
-
-            int surfaceY = GameService.Instance.WorldService
-                .GetSurfaceHeight(new Vector3(x, 0, z));
-
-            Debug.Log($"SurfaceY at {x},{z} = {surfaceY}");
-
-            float correctedY = surfaceY + 2f;
-
-            Debug.Log($"Sending corrected Y: {correctedY}");
-
-            room.Send("move", new
-            {
-                x = x,
-                y = correctedY,
-                z = z
-            });
-        }
-
-        private IEnumerator InitializePlayerAfterSpawn(GameObject playerObj)
-        {
-            // Wait until Y is corrected
-            yield return new WaitForSeconds(0.3f);
-
-            GameService.Instance.RegisterNetworkPlayer(playerObj.transform);
+            room.Send("input", input);
         }
 
         public Room<ColyseusSchema.State> GetRoom() => room;

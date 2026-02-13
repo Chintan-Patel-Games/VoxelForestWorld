@@ -1,7 +1,9 @@
 using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 using VoxelWorld.Core.Events;
 using VoxelWorld.Core.Utilities;
+using VoxelWorld.Networking;
 using VoxelWorld.Player;
 using VoxelWorld.WorldGeneration.World;
 
@@ -55,11 +57,13 @@ namespace VoxelWorld.Core.PlayerSystem
         public void InitializePlayer(GameObject playerObj)
         {
             var view = playerObj.GetComponent<PlayerView>();
+            bool isLocal = playerObj.CompareTag("LocalPlayer");
 
             PlayerController controller = new PlayerController(
                 model,
                 view.CharacterController,
-                view.CameraTarget
+                view.CameraTarget,
+                isLocal
             );
 
             // Inject controller into view
@@ -68,6 +72,20 @@ namespace VoxelWorld.Core.PlayerSystem
             AttachCamera(view);
 
             EventService.Instance.OnGameInitialized.InvokeEvent(true);  // Notify loading system
+        }
+
+        public void AttachCameraToNetworkPlayer(Transform player)
+        {
+            var view = player.GetComponent<NetworkPlayerView>();
+
+            if (view == null || view.CameraTarget == null)
+            {
+                Debug.LogError("CameraTarget missing on NetworkPlayerView!");
+                return;
+            }
+
+            virtualCamera.Follow = view.CameraTarget;
+            virtualCamera.LookAt = view.CameraTarget;
         }
 
         private void AttachCamera(PlayerView view)
