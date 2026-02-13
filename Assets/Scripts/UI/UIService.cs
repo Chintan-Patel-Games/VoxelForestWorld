@@ -53,6 +53,7 @@ namespace VoxelWorld.UI
         public void HidePauseUI() => pauseController.Hide();
 
         public void ShowOptionsUI() => optionsController.Show();
+        public void HideOptionsUI() => optionsController.Hide();
 
         public void OnGamePause(bool paused)
         {

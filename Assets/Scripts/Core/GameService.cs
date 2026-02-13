@@ -72,7 +72,6 @@ namespace VoxelWorld.Core
             Debug.Log("GameService registering network player.");
 
             player = networkPlayer;
-            //PlayerService.Instance.InitializePlayer(networkPlayer.gameObject);
             PlayerService.Instance.RegisterLocalNetworkPlayer(networkPlayer);
             worldController.player = player;
 
@@ -83,11 +82,8 @@ namespace VoxelWorld.Core
             Cursor.visible = false;
         }
 
-        private void Update()
-        {
+        private void Update() =>
             GlobalSoundService.Instance.SoundService?.UpdateFootsteps(Time.deltaTime);
-            PlayerService.Instance.Render();
-        }
 
         public static ChunkService ChunkService => Instance.WorldService.GetChunkService();
     }

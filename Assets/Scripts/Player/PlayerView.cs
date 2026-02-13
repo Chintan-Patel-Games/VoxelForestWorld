@@ -9,11 +9,8 @@ namespace VoxelWorld.Player
         public GameObject CinemachineCameraTarget;
 
         private CharacterController characterController;
-        private PlayerController controller;
 
         private void Awake() => characterController = GetComponent<CharacterController>();
-
-        public void SetController(PlayerController controller) => this.controller = controller;
 
         public void ApplySimulation(Vector3 serverPosition)
         {
@@ -25,8 +22,6 @@ namespace VoxelWorld.Player
         {
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         }
-
-        public void TickRender() => controller?.TickUpdate();
 
         public Transform CameraTarget => CinemachineCameraTarget.transform;
     }

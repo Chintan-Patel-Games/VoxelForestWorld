@@ -40,11 +40,5 @@ namespace VoxelWorld.Core.PlayerSystem
                 Debug.LogWarning("CameraTarget missing!");
             }
         }
-
-        public void Render()
-        {
-            if (localPlayerView != null)
-                localPlayerView.TickRender();
-        }
     }
 }

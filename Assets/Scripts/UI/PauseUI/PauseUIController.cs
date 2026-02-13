@@ -41,7 +41,7 @@ namespace VoxelWorld.UI.PauseUI
                 await ColyseusManager.Instance.GetRoom().Leave();
 
             UIService.Instance.ShowMainMenuUI();
-            SceneManager.LoadScene("Main Menu");
+            //SceneManager.LoadScene("Main Menu");
         }
 
         public void Show() => view.EnableView();

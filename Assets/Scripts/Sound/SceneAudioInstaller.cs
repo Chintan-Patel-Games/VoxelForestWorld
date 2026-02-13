@@ -1,8 +1,9 @@
 using UnityEngine;
+using VoxelWorld.Core.Utilities;
 
 namespace VoxelWorld.Sound
 {
-    public class SceneAudioInstaller : MonoBehaviour
+    public class SceneAudioInstaller : GenericMonoSingleton<SceneAudioInstaller>
     {
         [SerializeField] private AudioSource sfxSource;
         [SerializeField] private AudioSource bgmSource;

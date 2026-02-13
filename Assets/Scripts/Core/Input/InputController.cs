@@ -35,7 +35,7 @@ public class InputController : MonoBehaviour
 
     public void OnPause(InputValue value)
     {
-        if (!isGamePaused) EventService.Instance.OnGamePause.InvokeEvent(!isGamePaused);
+        //if (!isGamePaused) EventService.Instance.OnGamePause.InvokeEvent(!isGamePaused);
     }
 
     private void OnPauseStateChanged(bool paused) => isGamePaused = paused;

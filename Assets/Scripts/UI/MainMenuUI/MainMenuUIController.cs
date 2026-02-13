@@ -20,6 +20,7 @@ namespace VoxelWorld.UI.MainMenuUI
         public void StartGame()
         {
             Hide();
+            UIService.Instance.HideOptionsUI();
             GlobalSoundService.Instance.SoundService.PlaySFX(Sound.SoundType.UI_BUTTON_CLICK);
             UIService.Instance.ShowLoadingUI();
             EventService.Instance.OnStartLoading.InvokeEvent(true);
