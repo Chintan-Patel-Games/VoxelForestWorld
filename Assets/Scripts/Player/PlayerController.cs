@@ -6,195 +6,99 @@ namespace VoxelWorld.Player
     public class PlayerController
     {
         private PlayerModel model;
-        private CharacterController controller;
+        private PlayerView view;
         private Transform cameraTarget;
         private bool isLocalPlayer;
 
-        // Footsteps
-        private bool wasMoving = false;
-        private bool wasSprinting = false;
+        //// Footsteps
+        //private bool wasMoving = false;
+        //private bool wasSprinting = false;
 
-        private float verticalVelocity;
-        private float terminalVelocity = 53f;
-        private float speed;
-        private float rotationVelocity;
-        private float cinemachinePitch;
+        //private bool Grounded;
 
-        private bool Grounded;
-        private float jumpTimeoutDelta;
-        private float fallTimeoutDelta;
+        //// Camera Rotation
+        //private float cinemachinePitch;
+        //private float smoothing = 12f;
+        //private const float threshold = 0.01f;
+        //private Vector2 currentLook;
 
-        private float smoothing = 12f;
-        private const float threshold = 0.01f;
-        private Vector2 smoothLook;
-        private Vector2 currentLook;
-
-        public PlayerController(PlayerModel model, CharacterController controller, Transform cameraTarget, bool isLocalPlayer)
+        public PlayerController(PlayerModel model, PlayerView view, Transform cameraTarget, bool isLocalPlayer)
         {
             this.model = model;
-            this.controller = controller;
+            this.view = view;
             this.cameraTarget = cameraTarget;
             this.isLocalPlayer = isLocalPlayer;
-
-            jumpTimeoutDelta = model.JumpTimeout;
-            fallTimeoutDelta = model.FallTimeout;
         }
 
-        public void TickUpdate(Transform playerTransform)
+        public void TickUpdate()
         {
-            if (!isLocalPlayer) return;
-
-            //GroundedCheck(playerTransform);
-            //JumpAndGravity();
-            //Move(playerTransform);
+            // Client Rendering Only
+            view.ApplySimulation(model.Position);
+            view.ApplyRotation(model.RotationY);
         }
 
-        public void TickLateUpdate(Transform playerTransform)
-        {
-            if (!isLocalPlayer) return;
+        //public void TickLateUpdate(Transform playerTransform)
+        //{
+        //    if (!isLocalPlayer) return;
 
-            CameraRotation(playerTransform);
-        }
+        //    CameraRotation(playerTransform);
+        //}
 
+        //private void HandleFootsteps(bool isMoving, bool isSprinting)
+        //{
+        //    // Must be grounded to play footsteps OR If player is not moving -> stop footsteps
+        //    if (!isMoving || !Grounded)
+        //    {
+        //        GlobalSoundService.Instance.SoundService.StopFootsteps();
+        //        wasMoving = false;
+        //        return;
+        //    }
 
-        private void GroundedCheck(Transform playerTransform)
-        {
-            Vector3 spherePos = new Vector3(playerTransform.position.x,
-                                            playerTransform.position.y - model.GroundedOffset,
-                                            playerTransform.position.z);
+        //    // If player JUST started moving -> start footsteps
+        //    if (isMoving && !wasMoving)
+        //    {
+        //        GlobalSoundService.Instance.SoundService.StartFootsteps(isSprinting);
+        //    }
 
-            Grounded = Physics.CheckSphere(spherePos, model.GroundedRadius, model.GroundLayers, QueryTriggerInteraction.Ignore);
-        }
+        //    // If player changed from walk -> sprint or sprint -> walk
+        //    if (wasSprinting != isSprinting && wasMoving)
+        //    {
+        //        GlobalSoundService.Instance.SoundService.UpdateFootstepsMode(isSprinting);
+        //    }
 
-        private void Move(Transform playerTransform)
-        {
-            var input = InputService.Instance;
+        //    wasMoving = isMoving;
+        //    wasSprinting = isSprinting;
+        //}
 
-            float targetSpeed = input.Sprint ? model.SprintSpeed : model.MoveSpeed;
-            if (input.Move == Vector2.zero) targetSpeed = 0f;
+        //private void CameraRotation(Transform playerTransform)
+        //{
+        //    if (InputService.Instance == null) return;
 
-            float currentHorizontalSpeed = new Vector3(controller.velocity.x, 0f, controller.velocity.z).magnitude;
+        //    var input = InputService.Instance;
 
-            float speedOffset = 0.1f;
-            float inputMagnitude = input.Move.magnitude;
+        //    Vector2 look = input.Look;
 
-            if (currentHorizontalSpeed < targetSpeed - speedOffset ||
-                currentHorizontalSpeed > targetSpeed + speedOffset)
-            {
-                speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.deltaTime * model.SpeedChangeRate);
-                speed = Mathf.Round(speed * 1000f) / 1000f;
-            }
-            else speed = targetSpeed;
+        //    // Clamp look input if frame stutter occurs
+        //    if (Time.deltaTime > 0.04f) // ~25+ FPS threshold
+        //        look *= (0.04f / Time.deltaTime);
 
-            Vector3 inputDir = (playerTransform.right * input.Move.x + playerTransform.forward * input.Move.y).normalized;
+        //    // Apply smoothing
+        //    look = Vector2.Lerp(currentLook, look, smoothing * Time.deltaTime);
+        //    currentLook = look;
 
-            controller.Move(inputDir * (speed * Time.deltaTime) + new Vector3(0f, verticalVelocity, 0f) * Time.deltaTime);
+        //    if (look.sqrMagnitude >= threshold)
+        //    {
+        //        float delta = Time.deltaTime;
 
-            // Determine movement state
-            float horizontalSpeed = new Vector3(controller.velocity.x, 0, controller.velocity.z).magnitude;
-            bool isMoving = horizontalSpeed > 0.1f;
-            bool isSprinting = InputService.Instance.Sprint;
+        //        // vertical rotation (camera pitch)
+        //        cinemachinePitch += look.y * model.RotationSpeed * delta;
+        //        cinemachinePitch = Mathf.Clamp(cinemachinePitch, model.BottomClamp, model.TopClamp);
 
-            // Apply footstep logic
-            HandleFootsteps(isMoving, isSprinting);
-        }
+        //        cameraTarget.localRotation = Quaternion.Euler(cinemachinePitch, 0f, 0f);
 
-        private void HandleFootsteps(bool isMoving, bool isSprinting)
-        {
-            // Must be grounded to play footsteps OR If player is not moving -> stop footsteps
-            if (!isMoving || !Grounded)
-            {
-                GlobalSoundService.Instance.SoundService.StopFootsteps();
-                wasMoving = false;
-                return;
-            }
-
-            // If player JUST started moving -> start footsteps
-            if (isMoving && !wasMoving)
-            {
-                GlobalSoundService.Instance.SoundService.StartFootsteps(isSprinting);
-            }
-
-            // If player changed from walk -> sprint or sprint -> walk
-            if (wasSprinting != isSprinting && wasMoving)
-            {
-                GlobalSoundService.Instance.SoundService.UpdateFootstepsMode(isSprinting);
-            }
-
-            wasMoving = isMoving;
-            wasSprinting = isSprinting;
-        }
-
-        private void JumpAndGravity()
-        {
-            var input = InputService.Instance;
-
-            if (Grounded)
-            {
-                fallTimeoutDelta = model.FallTimeout;
-
-                if (verticalVelocity < 0f)
-                    verticalVelocity = -2f;
-
-                if (input.Jump && jumpTimeoutDelta <= 0f)
-                {
-                    verticalVelocity = Mathf.Sqrt(model.JumpHeight * -2f * model.Gravity);
-
-                    // STOP FOOTSTEPS IMMEDIATELY WHEN JUMPING
-                    GlobalSoundService.Instance.SoundService.StopFootsteps();
-                    wasMoving = false;
-                }
-
-                if (jumpTimeoutDelta >= 0f)
-                    jumpTimeoutDelta -= Time.deltaTime;
-            }
-            else
-            {
-                jumpTimeoutDelta = model.JumpTimeout;
-
-                if (fallTimeoutDelta >= 0f)
-                    fallTimeoutDelta -= Time.deltaTime;
-
-                // STOP FOOTSTEPS WHILE FALLING
-                GlobalSoundService.Instance.SoundService.StopFootsteps();
-                wasMoving = false;
-
-                input.Jump = false;
-            }
-
-            if (verticalVelocity < terminalVelocity)
-                verticalVelocity += model.Gravity * Time.deltaTime;
-        }
-
-        private void CameraRotation(Transform playerTransform)
-        {
-            if (InputService.Instance == null) return;
-
-            var input = InputService.Instance;
-
-            Vector2 look = input.Look;
-
-            // Clamp look input if frame stutter occurs
-            if (Time.deltaTime > 0.04f) // ~25+ FPS threshold
-                look *= (0.04f / Time.deltaTime);
-
-            // Apply smoothing
-            look = Vector2.Lerp(currentLook, look, smoothing * Time.deltaTime);
-            currentLook = look;
-
-            if (look.sqrMagnitude >= threshold)
-            {
-                float delta = Time.deltaTime;
-
-                // vertical rotation (camera pitch)
-                cinemachinePitch += look.y * model.RotationSpeed * delta;
-                cinemachinePitch = Mathf.Clamp(cinemachinePitch, model.BottomClamp, model.TopClamp);
-
-                cameraTarget.localRotation = Quaternion.Euler(cinemachinePitch, 0f, 0f);
-
-                // horizontal rotation (player yaw)
-                playerTransform.Rotate(Vector3.up * look.x * model.RotationSpeed * delta);
-            }
-        }
+        //        // horizontal rotation (player yaw)
+        //        playerTransform.Rotate(Vector3.up * look.x * model.RotationSpeed * delta);
+        //    }
+        //}
     }
 }

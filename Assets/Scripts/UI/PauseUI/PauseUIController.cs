@@ -36,8 +36,10 @@ namespace VoxelWorld.UI.PauseUI
             Hide();
             Time.timeScale = 1f;
             GlobalSoundService.Instance.SoundService.PlaySFX(Sound.SoundType.UI_BUTTON_CLICK);
+
             if (ColyseusManager.Instance.GetRoom() != null)
                 await ColyseusManager.Instance.GetRoom().Leave();
+
             UIService.Instance.ShowMainMenuUI();
             SceneManager.LoadScene("Main Menu");
         }

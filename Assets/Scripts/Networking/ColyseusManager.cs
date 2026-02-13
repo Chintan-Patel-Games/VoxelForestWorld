@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using VoxelWorld.Core;
+using VoxelWorld.Core.PlayerSystem;
 using VoxelWorld.Core.Utilities;
 
 namespace VoxelWorld.Networking
@@ -29,7 +30,6 @@ namespace VoxelWorld.Networking
         async Task Connect()
         {
             client = new Client("wss://voxelworld-server.onrender.com");
-
             room = await client.JoinOrCreate<ColyseusSchema.State>("my_room");
 
             Debug.Log("Connected to room!");
@@ -44,17 +44,29 @@ namespace VoxelWorld.Networking
 
         private void OnStateUpdated(ColyseusSchema.State state, bool isFirstState)
         {
-            if (isFirstState)
-                Debug.Log("Initial state received");
-
             foreach (var key in state.players.Keys)
             {
                 string id = (string)key;
                 var playerState = state.players[id];
 
+                // SPAWN PLAYER IF NOT EXISTS
                 if (!spawnedPlayers.ContainsKey(id))
                 {
                     GameObject playerObj = Instantiate(playerPrefab);
+
+                    // Set initial transform from server BEFORE first frame
+                    playerObj.transform.position = new Vector3(
+                        playerState.x,
+                        playerState.y,
+                        playerState.z
+                    );
+
+                    playerObj.transform.rotation = Quaternion.Euler(
+                        0f,
+                        playerState.rotY,
+                        0f
+                    );
+
                     spawnedPlayers[id] = playerObj;
 
                     networkTransforms[id] = new NetworkTransform();
@@ -62,13 +74,13 @@ namespace VoxelWorld.Networking
                     var view = playerObj.GetComponent<NetworkPlayerView>();
                     if (view == null)
                     {
-                        Debug.LogError("NetworkPlayerView MISSING on Player Prefab!");
+                        Debug.LogError("NetworkPlayerView missing on Player Prefab!");
                         return;
                     }
-                    view.NetworkTransform = networkTransforms[id];
 
                     var sender = playerObj.GetComponent<NetworkInputSender>();
 
+                    // LOCAL PLAYER
                     if (id == room.SessionId)
                     {
                         Debug.Log("Local player spawned");
@@ -76,17 +88,22 @@ namespace VoxelWorld.Networking
                         view.IsLocalPlayer = true;
                         playerObj.tag = "LocalPlayer";
 
+                        view.NetworkTransform = networkTransforms[id];
+
                         if (sender != null)
                         {
                             sender.manager = this;
                             sender.enabled = true;
                         }
                     }
+                    // REMOTE PLAYER
                     else
                     {
                         Debug.Log("Remote player spawned");
 
                         view.IsLocalPlayer = false;
+
+                        view.NetworkTransform = networkTransforms[id];
 
                         if (sender != null)
                             sender.enabled = false;
@@ -96,25 +113,30 @@ namespace VoxelWorld.Networking
                 }
 
                 networkTransforms[id].TargetPosition = new Vector3(
-                    playerState.x,
-                    playerState.y,
-                    playerState.z
+                        playerState.x,
+                        playerState.y,
+                        playerState.z
                 );
 
-                if (id == room.SessionId && !localPlayerInitialized)
-                {
-                    localPlayerInitialized = true;
-
-                    Debug.Log("Registering local network player AFTER first server sync");
-
-                    GameService.Instance.RegisterNetworkPlayer(
-                        spawnedPlayers[id].transform
-                    );
-                }
-
                 networkTransforms[id].TargetRotationY = playerState.rotY;
+
+                // UPDATE LOCAL MODEL FROM SERVER
+                if (id == room.SessionId)
+                {
+                    if (!localPlayerInitialized)
+                    {
+                        localPlayerInitialized = true;
+
+                        Debug.Log("Registering local network player AFTER first sync");
+
+                        GameService.Instance.RegisterNetworkPlayer(
+                            spawnedPlayers[id].transform
+                        );
+                    }
+                }
             }
 
+            // REMOVE DISCONNECTED PLAYERS
             var existingIds = new List<string>(spawnedPlayers.Keys);
 
             foreach (var id in existingIds)

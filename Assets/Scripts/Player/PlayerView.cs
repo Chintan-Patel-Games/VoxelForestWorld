@@ -13,14 +13,21 @@ namespace VoxelWorld.Player
 
         private void Awake() => characterController = GetComponent<CharacterController>();
 
-        private void Update() => controller?.TickUpdate(transform);
-
-        private void LateUpdate() => controller?.TickLateUpdate(transform);
-
         public void SetController(PlayerController controller) => this.controller = controller;
 
-        public Transform CameraTarget => CinemachineCameraTarget.transform;
+        public void ApplySimulation(Vector3 serverPosition)
+        {
+            Vector3 delta = serverPosition - transform.position;
+            characterController.Move(delta);
+        }
 
-        public CharacterController CharacterController => characterController;
+        public void ApplyRotation(float yaw)
+        {
+            transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        }
+
+        public void TickRender() => controller?.TickUpdate();
+
+        public Transform CameraTarget => CinemachineCameraTarget.transform;
     }
 }

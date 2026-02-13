@@ -10,7 +10,7 @@ namespace VoxelWorld.Core.InputSystem
         public Vector2 Look { get; set; }
 
         // Actions
-        public bool Jump { get; set; }
+        public bool JumpPressed { get; set; }
         public bool Sprint { get; set; }
         public bool Pause { get; set; }
 

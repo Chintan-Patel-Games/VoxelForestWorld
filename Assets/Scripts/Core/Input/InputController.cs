@@ -25,7 +25,7 @@ public class InputController : MonoBehaviour
 
     public void OnJump(InputValue value)
     {
-        if (!isGamePaused) InputService.Instance.Jump = value.isPressed;
+        if (!isGamePaused && value.isPressed) InputService.Instance.JumpPressed = value.isPressed;
     }
 
     public void OnSprint(InputValue value)

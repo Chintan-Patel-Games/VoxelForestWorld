@@ -65,20 +65,6 @@ namespace VoxelWorld.Core
                 enabled = false;
                 return;
             }
-
-            // Pick spawn position
-            //spawnPos = new Vector3(Random.Range(-10, 10), 0, Random.Range(-10, 10));
-
-            //SpawnPlayerAtSurface();
-
-            //EventService.Instance.OnChunkMeshReady.AddListener(OnSpawnChunkMeshReady);
-
-            //// Generate initial chunk where player will spawn
-            //WorldService.GenerateInitialChunk(spawnPos);
-
-            //// Force mesh build for initial spawn chunk (before streaming/player exist)
-            //Vector2Int spawnCoord = WorldService.WorldToChunkCoord(spawnPos);
-            //WorldService.GetChunkService().BuildChunkMesh(spawnCoord);
         }
 
         public void RegisterNetworkPlayer(Transform networkPlayer)
@@ -87,7 +73,7 @@ namespace VoxelWorld.Core
 
             player = networkPlayer;
             //PlayerService.Instance.InitializePlayer(networkPlayer.gameObject);
-            PlayerService.Instance.AttachCameraToNetworkPlayer(networkPlayer);
+            PlayerService.Instance.RegisterLocalNetworkPlayer(networkPlayer);
             worldController.player = player;
 
             EventService.Instance.OnGameInitialized.InvokeEvent(true);
@@ -97,39 +83,11 @@ namespace VoxelWorld.Core
             Cursor.visible = false;
         }
 
-        private void Update() => GlobalSoundService.Instance.SoundService?.UpdateFootsteps(Time.deltaTime);
-
-        //private void OnSpawnChunkMeshReady(Vector2Int coord)
-        //{
-        //    if (!isGameScene) return;
-
-        //    Vector2Int spawnCoord = WorldService.WorldToChunkCoord(spawnPos);
-            
-        //    if (coord != spawnCoord) return;  // Only spawn when THIS EXACT chunk mesh is ready
-
-        //    // Stop listening (so no duplicate spawns)
-        //    EventService.Instance.OnChunkMeshReady.RemoveListener(OnSpawnChunkMeshReady);
-
-        //    SpawnPlayerAtSurface();
-        //}
-
-        //private void SpawnPlayerAtSurface()
-        //{
-        //    // Delegates the responsibility to PlayerService
-        //    player = PlayerService.Instance.SpawnPlayerAtSurface(spawnPos);
-
-        //    worldController.player = player;
-
-        //    EventService.Instance.OnGameInitialized.InvokeEvent(true);
-        //    UIService.Instance.HideLoadingUI();  // Hide loading screen
-
-        //    // Lock + hide cursor for FPS control
-        //    Cursor.lockState = CursorLockMode.Locked;
-        //    Cursor.visible = false;
-
-        //    // Begin streaming chunks around player
-        //    //WorldService.StartStreamingFromPlayer(player, worldController);
-        //}
+        private void Update()
+        {
+            GlobalSoundService.Instance.SoundService?.UpdateFootsteps(Time.deltaTime);
+            PlayerService.Instance.Render();
+        }
 
         public static ChunkService ChunkService => Instance.WorldService.GetChunkService();
     }

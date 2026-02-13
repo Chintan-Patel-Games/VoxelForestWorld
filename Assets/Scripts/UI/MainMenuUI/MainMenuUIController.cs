@@ -22,7 +22,7 @@ namespace VoxelWorld.UI.MainMenuUI
             Hide();
             GlobalSoundService.Instance.SoundService.PlaySFX(Sound.SoundType.UI_BUTTON_CLICK);
             UIService.Instance.ShowLoadingUI();
-            Core.Events.EventService.Instance.OnStartLoading.InvokeEvent(true);
+            EventService.Instance.OnStartLoading.InvokeEvent(true);
             SceneManager.LoadScene("VoxelCraft");
         }
 

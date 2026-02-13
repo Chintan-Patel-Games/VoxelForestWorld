@@ -29,15 +29,18 @@ public Player() { }
 		public float rotY = default(float);
 
 		[Type(4, "number")]
-		public float velY = default(float);
+		public float lookX = default(float);
 
 		[Type(5, "number")]
-		public float inputX = default(float);
+		public float velY = default(float);
 
 		[Type(6, "number")]
+		public float inputX = default(float);
+
+		[Type(7, "number")]
 		public float inputZ = default(float);
 
-		[Type(7, "boolean")]
+		[Type(8, "boolean")]
 		public bool grounded = default(bool);
 	}
 }

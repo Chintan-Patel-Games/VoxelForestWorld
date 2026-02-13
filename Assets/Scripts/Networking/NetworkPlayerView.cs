@@ -13,12 +13,10 @@ namespace VoxelWorld.Networking
         public Transform CameraTarget;
 
         private float pitch;
-        private float smoothing = 12f;
 
         void Update()
         {
-            if (NetworkTransform == null)
-                return;
+            if (NetworkTransform == null) return;
 
             transform.position = Vector3.Lerp(
                 transform.position,
@@ -26,21 +24,18 @@ namespace VoxelWorld.Networking
                 15f * Time.deltaTime
             );
 
-            transform.rotation = Quaternion.Lerp(
+            transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 Quaternion.Euler(0, NetworkTransform.TargetRotationY, 0),
                 15f * Time.deltaTime
             );
 
             // ONLY LOCAL PLAYER LOOKS
-            if (!IsLocalPlayer)
-                return;
+            if (!IsLocalPlayer) return;
 
-            var input = InputService.Instance;
+            Vector2 look = InputService.Instance.Look;
 
-            Vector2 look = input.Look;
-
-            pitch += look.y * 2f;
+            pitch += look.y * 120f * Time.deltaTime;
             pitch = Mathf.Clamp(pitch, -80f, 80f);
 
             if (CameraTarget != null)
